@@ -22,7 +22,6 @@ print('Server started. Waiting for connection...')
 def now():
     return time.ctime(time.time())
 
-bufsize = 16
 def handler(conn, addr):
     expression = ""
     num_expressions = 0

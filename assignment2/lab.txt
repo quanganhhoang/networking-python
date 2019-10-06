@@ -1,0 +1,9 @@
+1. What version of HTTP is the server running?
+HTTP/1.1
+
+2. How is the beginning of the content sent by the server recognized by the client?
+It is recognized as the part after \r\n which signals the end of the header.
+
+3. How does the client know what type of content is returned?
+Because of the specified content-type in the response header.
+
