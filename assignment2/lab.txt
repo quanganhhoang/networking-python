@@ -1,3 +1,6 @@
+Step 1: Manual GET with telnet
+=== Screenshot Attached ===
+
 1. What version of HTTP is the server running?
 HTTP/1.1
 
@@ -7,3 +10,28 @@ It is recognized as the part after \r\n which signals the end of the header.
 3. How does the client know what type of content is returned?
 Because of the specified content-type in the response header.
 
+Step 2: Capture a Trace
+=== No Questions ===
+
+Step 3: Inspect the trace
+1. What is the format of a header line? Give a simple description that fits the headers you server
+A header line has the format of a key-value pair separated by a colon and ends with \r\n
+e.g. Host: www.mit.edu\r\n
+
+2. What headers are used to indicate the kind and length of content that is returned in a response?
+Content-Type and Content-length
+
+e.g.
+Content-Type: image/jpeg\r\n
+Content-Length: 231907\r\n
+
+Step 4: Content Caching
+1. What is the name of the header the browser sends to let the server work out whether to send fresh content?
+If-Modified-Since
+If-None-Match: "Etag_value"
+
+2. Where exactly does the timestamp value carried by the header come from?
+It comes from the response header sent back by the server.
+
+Step 5: Complex pages
+=== No Questions ===

@@ -1,0 +1,63 @@
+A. NOTE:
+
+dig is a flexible, command-line tool for querying remote DNS servers that replaces the older nslookup program.
+
+B. Lab:
+
+Step 1: Manual Name Resolution
+
+1. dig @198.41.0.4 www.washington.edu
+-> sends a request to a nameserver at given ip address for the given domain nameserver
+
+a.edu-servers.net.	172800	IN	A	192.5.6.30
+
+2. dig @192.5.6.30 www.washington.edu
+
+3. dig @marge.cac.washington.edu. www.washington.edu
+
+4. dig @140.142.9.115 www.washington.edu
+
+;; ANSWER SECTION:
+www.washington.edu.	1	IN	A	128.95.155.134
+www.washington.edu.	1	IN	A	128.95.155.197
+www.washington.edu.	1	IN	A	128.95.155.135
+
+Step 2: Capture a Trace
+- NO QUESTIONS -
+
+Step 3: Inspect the Trace
+- NO QUESTIONS -
+
+Step 4: Details of DNS messages
+
+1. How many bits long is the Transaction ID? 
+16-bit
+
+Based on this length, take your best guess as to how likely it is that concurrent transactions will use the same transaction ID?
+1 - (2^16 - 1) / 2^16 = 0.000015
+
+2. Which flag bit and what values signifies whether the DNS message is a query or response?
+The first flag bit signifies whether the DNS message is a query (0) or response (1)
+
+3. How many bytes long is the entire DNS header? 
+There are 6 headers of 2 bytes each -> total of 12 bytes for the entire DNS header
+
+[Use information in the bottom status line when you select parts of the packet and the bottom panel to help you work this out]
+
+4. For the initial response, in what section are the names of the nameservers carried?
+Authoritative nameservers
+
+What is the Type of the records that carry nameserver names?
+Type NS
+
+5. Similarly, in what section are the IP addresses of the nameservers carried? 
+Additional records
+
+What is the Type of the records that carry the IP addresses?
+Type A (IPv4) or AAAA (IPv6)
+
+6. For the final response, in what section is the IP address of the domain name carried?
+IP address of the domain name is carried in the Answers Section in an A or AAAA record
+
+Step 5: DNS Response Time
+- NO QUESTIONS -

@@ -1,0 +1,70 @@
+A. NOTE:
+
+dig is a flexible, command-line tool for querying remote DNS servers that replaces the older nslookup program.
+
+B. Lab:
+
+Step 1: Manual Name Resolution
+
+1. dig @198.41.0.4 www.mit.edu
+-> sends a request to a nameserver at given ip address for the given domain nameserver
+
+a.edu-servers.net.	172800	IN	A	192.5.6.30
+
+2. dig @192.5.6.30 www.mit.edu
+
+;; AUTHORITY SECTION:
+mit.edu.		172800	IN	NS	usw2.akam.net.
+mit.edu.		172800	IN	NS	asia1.akam.net.
+mit.edu.		172800	IN	NS	asia2.akam.net.
+mit.edu.		172800	IN	NS	use2.akam.net.
+mit.edu.		172800	IN	NS	ns1-37.akam.net.
+mit.edu.		172800	IN	NS	ns1-173.akam.net.
+mit.edu.		172800	IN	NS	eur5.akam.net.
+mit.edu.		172800	IN	NS	use5.akam.net.
+
+3. dig @usw2.akam.net. www.mit.edu
+
+;; ANSWER SECTION:
+www.mit.edu.		1800	IN	CNAME	www.mit.edu.edgekey.net.
+
+Step 2: Capture a Trace
+
+Step 3: Inspect the Trace
+
+NOTE:
+The DNS block follows the IP and UDP blocks. This is because DNS messages are carried in UDP segments within IP packets. 
+You will see that the UDP port used by a nameserver is 53.
+The DNS header starts with a Transaction ID that is used to link a request and the corresponding reply – they both carry the same Transaction ID.
+While DNS queries mostly server to carry the query, DNS responses often return a set of useful information.
+
+Step 4: Details of DNS messages
+
+1. How many bits long is the Transaction ID? 
+16-bit
+
+Based on this length, take your best guess as to how likely it is that concurrent transactions will use the same transaction ID?
+1 - (2^16 - 1) / 2^16 = 0.000015
+
+2. Which flag bit and what values signifies whether the DNS message is a query or response?
+The first flag bit signifies whether the DNS message is a query (0) or response (1)
+
+3. How many bytes long is the entire DNS header? 
+There are 6 headers of 2 bytes each -> total of 12 bytes for the entire DNS header
+
+[Use information in the bottom status line when you select parts of the packet and the bottom panel to help you work this out]
+
+4. For the initial response, in what section are the names of the nameservers carried?
+Authoritative nameservers
+
+What is the Type of the records that carry nameserver names?
+Type NS
+
+5. Similarly, in what section are the IP addresses of the nameservers carried? 
+Additional records
+
+What is the Type of the records that carry the IP addresses?
+Type A or AAAA
+
+6. For the final response, in what section is the IP address of the domain name carried?
+IP address of the domain name is carried in the Answers Section in an A or AAAA record
