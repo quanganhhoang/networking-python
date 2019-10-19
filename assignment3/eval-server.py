@@ -11,7 +11,7 @@ is_local = True
 host_name = socket.getfqdn()
 print('hostname is', host_name)
 
-host_ip = socket.gethostbyname('localhost' if is_local else host_name)
+host_ip = socket.gethostbyname(config.EXPRESSION_EVAL_SERVER)
 print('host IP address is', host_ip)
 
 host_port = config.EXPRESSION_EVAL_PORT
@@ -20,9 +20,6 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((host_ip, host_port))
 s.listen()
 print('Server started. Waiting for connection...')
-
-def now():
-    return time.ctime(time.time())
 
 def handler(conn, addr):
     expression = ""
@@ -45,13 +42,11 @@ def handler(conn, addr):
     
     print("Sending back results...")
     conn.sendall(response)
-        # print('Server received:', data, 'from', addr)
-        # conn.sendall(str.encode('Echo ==> ') + data)
-        # time.sleep(10)  # simulating long running program
+
     conn.close()
 
 # main thread
 while True:
     client_socket, addr = s.accept()
-    print('Server connected by', addr, 'at', now())
+    print('Server connected by', addr, 'at', util.now())
     threading.Thread(target=handler, args=(client_socket, addr)).start()
