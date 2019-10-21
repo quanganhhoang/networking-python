@@ -31,7 +31,8 @@ def validate_expression(expression):
             if (is_sign and char.isdigit()) or (not is_sign and not char.isdigit()): # if expecting a sign but got a digit
                 return False
             elif char.isdigit(): # if not expecting a sign and got a digit
-                is_sign = True
+                if (i+1) < n and not expression[i+1].isdigit():
+                    is_sign = True
             elif char == '+' or char == '-': # if expecting a sign and got a sign
                 is_sign = False
 

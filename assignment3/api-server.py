@@ -15,13 +15,15 @@ STATUS_API = '/status.html'
 LAST_MIN = 'last_min'
 LAST_HOUR = 'last_hour'
 LAST_24HR = 'last_24HR'
-LIFETIME = 'lifetime'
+
+LIFETIME_EVAL = 'lifetime_count_eval'
+LIFETIME_TIME = 'lifetime_count_time'
 
 NUM_SECONDS_24HR = 60 * 60 * 24
 
 times = [0] * NUM_SECONDS_24HR # holds timestamps indexed by time % NUM_SECONDS_24HR
-eval_stats = [0] * NUM_SECONDS_24HR
-time_stats = [0] * NUM_SECONDS_24HR
+# eval_stats = [0] * NUM_SECONDS_24HR
+# time_stats = [0] * NUM_SECONDS_24HR
 
 last_ten_expression = []
 
@@ -70,36 +72,54 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 		return response
 	
-	# get current stat for /status.html
+	# get current stats for /status.html
+	
 	def get_stat(self, cur_time, api):
+		cache = pymemcache.client.base.Client((config.CACHE_SERVER, config.CACHE_PORT))
 		data = {LAST_MIN: 0,
 				LAST_HOUR: 0,
 				LAST_24HR: 0, 
 				LIFETIME: int(cache.get('lifetime_count_eval')) if api == EVAL_API else int(cache.get('lifetime_count_time'))}
 		
-		# eval_stats = cache.get('eval_stats')
-		# time_stats = cache.get('time_stats')
+		eval_keys = []
+		time_keys = []
+		for i in range(NUM_SECONDS_24HR):
+			eval_keys.append('eval_stat_' + str(i))
+			time_keys.append('time_stat_' + str(i))
+
+		eval_stats = cache.get_many(eval_keys) # batch get for better performance
+		time_stats = cache.get_many(time_keys) # returns a dict object
+		cache.close()
 
 		for i in range(NUM_SECONDS_24HR):
+			# time_key = 'time_' + str(i)
+			eval_stat_key = 'eval_stat_' + str(i)
+			time_stat_key = 'time_stat_' + str(i)
 			diff = cur_time - times[i]
+			# diff = cur_time - int(cache.get(time_key))
+			# eval_count = int(cache.get(eval_stat_key))
+			# time_count = int(cache.get(time_stat_key))
+			eval_count = int(eval_stats.get(eval_stat_key))
+			time_count = int(time_stats.get(time_stat_key))
 
 			if diff < 60:
-				data[LAST_MIN] += eval_stats[i] if api == EVAL_API else time_stats[i]
+				data[LAST_MIN] += eval_count if api == EVAL_API else time_count
 			if diff < 60 * 60:
-				data[LAST_HOUR] += eval_stats[i] if api == EVAL_API else time_stats[i]
+				data[LAST_HOUR] += eval_count if api == EVAL_API else time_count
 			if diff < NUM_SECONDS_24HR:
-				data[LAST_24HR] += eval_stats[i] if api == EVAL_API else time_stats[i]
-			
+				data[LAST_24HR] += eval_count if api == EVAL_API else time_count
+		
 		return data
 
 	# update status count per http request
 	def update_status(self, url, req_timestamp):
+		cache = pymemcache.client.base.Client((config.CACHE_SERVER, config.CACHE_PORT))
 		# print('Updating status...\r\n')
 		if (url == EVAL_API):
-			cache.incr('lifetime_count_eval', 1)
+			cache.incr(LIFETIME_EVAL, 1)
 			# LIFE_TIME_COUNT[0] += 1
 		elif (url == TIME_API):
-			cache.incr('lifetime_count_time', 1)
+			cache.incr(LIFETIME_TIME, 1)
 			# LIFE_TIME_COUNT[1] += 1
 
 		index = (req_timestamp - start_time) % NUM_SECONDS_24HR
@@ -108,18 +128,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
 		if (times[index] != req_timestamp):
 			times[index] = req_timestamp
 			if (url == EVAL_API): 
-				eval_stats[index] = 1
+				# eval_stats[index] = 1
+				cache_key = 'eval_stat_' + str(index)
+				cache.set(cache_key, 1)
 				# cache.get('eval_stats')[index] = 1
 			elif (url == TIME_API):
-				time_stats[index] = 1
+				# time_stats[index] = 1
+				cache_key = 'time_stat_' + str(index)
+				cache.set(cache_key, 1)
 				# cache.get('time_stats')[index] = 1
 		else:
 			if (url == EVAL_API):
-				eval_stats[index] += 1
+				# eval_stats[index] += 1
+				cache_key = 'eval_stat_' + str(index)
+				cache.incr(cache_key, 1)
 				# cache.get('eval_stats')[index] += 1
 			elif (url == TIME_API):
-				time_stats[index] += 1
+				# time_stats[index] += 1
+				cache_key = 'time_stat_' + str(index)
+				cache.incr(cache_key, 1)
 				# cache.get('time_stats')[index] += 1
+		
+		cache.close()
 
 	def handle_http(self):
 		status = 200
@@ -127,6 +157,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 		response = bytearray()
 		req_timestamp = int(time.time()) # take a timestamp
 
+		cache = pymemcache.client.base.Client((config.CACHE_SERVER, config.CACHE_PORT))
 		# print(self.path)
 		if self.path in routes:
 			if (self.path == EVAL_API):
@@ -167,6 +198,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 		self.send_header('Content-length', len(response))
 		self.end_headers()
 
+		cache.close()
 		return response
 
 	def respond(self):
@@ -175,19 +207,25 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 def init_cache():
 	cache = pymemcache.client.base.Client((config.CACHE_SERVER, config.CACHE_PORT))
-	# start_time = int(time.time())
-	# cache.set('start_time', 10)
-	# cache.set('times', [0] * NUM_SECONDS_24HR) # holds timestamps indexed by time % NUM_SECONDS_24HR
-	# cache.set('eval_stats', [0] * NUM_SECONDS_24HR)
-	# cache.set('time_stats', [0] * NUM_SECONDS_24HR)
+	
+	# populate dictionary objects for batch set operations
+	eval_stats = {}
+	time_stats = {}
+	for i in range(NUM_SECONDS_24HR):
+		eval_stats['eval_stat_' + str(i)] = 0
+		time_stats['time_stat_' + str(i)] = 0
+		
+	cache.set_many(eval_stats) # batch set to increase performance
+	cache.set_many(time_stats)
+	
 	cache.set('last_ten_expression', [])
-	cache.set('lifetime_count_eval', 0)
-	cache.set('lifetime_count_time', 0)
+	cache.set(LIFETIME_EVAL, 0)
+	cache.set(LIFETIME_TIME, 0)
 
-	return cache
+	cache.close()
 
 s = http.server.ThreadingHTTPServer((config.WEB_API_SERVER, config.WEB_API_PORT), Handler)
 print('Server started at {0}:{1}. Waiting for connection...'.format(config.WEB_API_SERVER, config.WEB_API_PORT))
-cache = init_cache()
+init_cache()
 
 s.serve_forever()

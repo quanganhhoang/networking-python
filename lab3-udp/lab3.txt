@@ -1,0 +1,41 @@
+LAB 3 - UDP
+
+Step 1: Capture a Trace
+
+Step 2: Inspect the Trace
+NOTE: Wireshark gives the name of the application protocol, 
+not the (UDP) transport protocol unless Wireshark cannot determine the application protocol.
+
+Source Port: port from which UDP message is sent
+Destination Port: port number and possibly name to which UDP message is destined
+Length: length of UDP message
+Checksum: checksum over the message that is used to validate its contents
+
+Step 3: UDP Message Structure
+1. Sketch a figure of the UDP message observed
+See attached [udp-structure.png]
+
+2. What does the Length field include? The UDP payload, UDP payload and UDP header, or UDP payload, UDP header, and lower layer headers?
+The Length field includes UDP payload and UDP header.
+
+3. How long in bits is the UDP checksum?
+16 bits
+
+4. How long in bytes is the entire UDP header?
+8 bytes
+
+Step 4: UDP Usage
+
+1. Give the value of the IP Protocol field that identifies the upper layer protocol as UDP.
+Next header: UDP
+
+See attached [udp-packet.png]
+
+2. Examine the UDP messages and give the destination IP addresses that are used when your com-puter is neither the source IP address nor the destination IP address.
+(If you have only your com-puter as the source or destination IP address then you may use the supplied trace.)
+
+Example of destination IP address: 224.0.0.251
+See attached [MDNS-ip-multicast.png]
+
+3. What is the typical size of UDP messages in your trace?
+8 bytes
