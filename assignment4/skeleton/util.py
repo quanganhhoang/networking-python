@@ -14,19 +14,23 @@ def get_transport_layer_by_name(name, local_port, remote_port, msg_handler):
     return gbn.GoBackN(local_port, remote_port, msg_handler)
 
 def make_packet(msg_type, seq_num, data):
-    packet = bytearray()
+    packet = b''
     # Type: 16 bit
-    packet.extend(struct.pack('<H', msg_type))
+    packet += struct.pack('!H', msg_type)
+    # packet += msg_type.to_bytes(2, 'big')
     # Seq number: 16 bit
-    packet.extend(struct.pack('<H', seq_num))
+    packet += struct.pack('!H', seq_num)
+    # packet += seq_num.to_bytes(2, 'big')
     # calculate checksum
     checksum = calc_checksum(msg_type, seq_num, data)
     # Checksum: 16 bit
-    packet.extend(struct.pack('<H', checksum))
+    packet += struct.pack('!H', checksum)
+    # packet += checksum.to_bytes(2, 'big')
     # Payload - None if it is an ACK
-    if (data): packet.extend(data)
-    
-    return bytes(packet)
+    if (data): 
+        packet += data
+    # print("Packet: ", packet)
+    return packet
 
 def calc_checksum(msg_type, seq_number, data):
     checksum = msg_type + seq_number
@@ -36,7 +40,10 @@ def calc_checksum(msg_type, seq_number, data):
             val = int(data[i]) + 256 * int(data[i+1])
             checksum += val
 
-        if (i < len(data)): # Last byte if it's odd length
-            checksum += data[i]
-
+        if (len(data) % 2 != 0): # Last byte if it's odd length
+            checksum += data[-1]
+    
     return checksum % pow(2, 16)
+
+def is_corrupted(msg_type, seq_num, data, recv_checksum):
+    return calc_checksum(msg_type, seq_num, data) != recv_checksum
