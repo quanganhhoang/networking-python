@@ -47,11 +47,8 @@ class StopAndWait:
 		msg = self.network_layer.recv()
 		# validate checksum
 		msg_type = struct.unpack('!H', msg[:2])[0] # first 2 bytes
-		# msg_type = int.from_bytes(msg[0:2], 'big')
 		seq_num = struct.unpack('!H', msg[2:4])[0] # next 2 bytes
-		# seq_num = int.from_bytes(msg[2:4], 'big')
 		recv_checksum = struct.unpack('!H', msg[4:6])[0] # next 2 bytes
-		# recv_checksum = int.from_bytes(msg[4:6], 'big')
 		data = msg[6:]
 		
 		if (util.is_corrupted(msg_type, seq_num, data, recv_checksum)):

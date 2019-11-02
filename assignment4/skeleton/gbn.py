@@ -66,7 +66,7 @@ class GoBackN:
 
 		if (util.is_corrupted(msg_type, seq_num, data, recv_checksum)):
 			if (data): # receiver sends ACK - sender does nothing in case of packet corruption
-				self.network_layer.send(util.make_packet(config.MSG_TYPE_ACK, self.window_start - 1, None))
+				self.network_layer.send(util.make_packet(config.MSG_TYPE_ACK, self.next_seq_number - 1, None))
 			return
 
 		if (msg_type == config.MSG_TYPE_ACK): # if this is the sender
@@ -77,6 +77,7 @@ class GoBackN:
 				self.window_start = seq_num + 1 # move window_start index
 				if (self.window_start == self.next_seq_number):
 					self.timer.cancel()
+					self.timer.join()
 				else:
 					self.timer = threading.Timer(config.TIMEOUT_MSEC/1000, self.resend_all)
 					self.timer.start()
@@ -85,6 +86,8 @@ class GoBackN:
 			# print('Receiver - MSG_TYPE: ', msg_type)
 			# print('Receiver - SEQ_NUM: ', seq_num)
 			if (seq_num == self.next_seq_number):
+				print("Receiver - Writing file #", self.file_id)
+				self.file_id += 1
 				self.msg_handler(data)
 				packet = util.make_packet(config.MSG_TYPE_ACK, seq_num, None)
 				self.network_layer.send(packet)
@@ -99,5 +102,5 @@ class GoBackN:
 		# class.
 		if (self.timer):
 			self.timer.cancel() 
-			# self.timer.join()
+			self.timer.join()
 		self.network_layer.shutdown()
