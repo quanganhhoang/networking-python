@@ -16,6 +16,7 @@ class GoBackN:
 		self.next_seq_number = 1 # [Sender/Receiver]
 		self.timer = None # [Sender]
 		self.file_id = 0 # [Sender/Receiver]
+		self.timer_lock = threading.Lock()
 
 	# "send" is called by application. Return true on success, false
 	# otherwise.
@@ -28,8 +29,9 @@ class GoBackN:
 			packet = util.make_packet(config.MSG_TYPE_DATA, self.next_seq_number, msg)
 			self.send_window[self.next_seq_number % (config.WINDOW_SIZE * 2)] = packet
 			if (self.window_start == self.next_seq_number):
-				self.timer = threading.Timer(config.TIMEOUT_MSEC/1000, self.resend_all)
-				self.timer.start()
+				with self.timer_lock:
+					self.timer = threading.Timer(config.TIMEOUT_MSEC/1000, self.resend_all)
+					self.timer.start()
 			print("Sender - Sending packet #", self.file_id)
 			self.network_layer.send(packet)
 			self.next_seq_number += 1
@@ -43,9 +45,9 @@ class GoBackN:
 	# Send all unacknowledge packets and restart timer
 	def resend_all(self):
 		print("Sender - Resending packets from {0} to {1}".format(self.window_start, self.next_seq_number))
-		
-		self.timer = threading.Timer(config.TIMEOUT_MSEC/1000, self.resend_all)
-		self.timer.start()
+		with self.timer_lock:
+			self.timer = threading.Timer(config.TIMEOUT_MSEC/1000, self.resend_all)
+			self.timer.start()
 		for i in range(self.window_start, self.next_seq_number):
 			i = i % (config.WINDOW_SIZE * 2)
 			self.network_layer.send(self.send_window[i])
@@ -76,11 +78,13 @@ class GoBackN:
 				print("Sender - Receiving ACK #", seq_num)
 				self.window_start = seq_num + 1 # move window_start index
 				if (self.window_start == self.next_seq_number):
-					self.timer.cancel()
-					self.timer.join()
+					with self.timer_lock:
+						self.timer.cancel()
+						self.timer.join()
 				else:
-					self.timer = threading.Timer(config.TIMEOUT_MSEC/1000, self.resend_all)
-					self.timer.start()
+					with self.timer_lock:
+						self.timer = threading.Timer(config.TIMEOUT_MSEC/1000, self.resend_all)
+						self.timer.start()
 				# self.window_start = self.window_start % (2 * config.WINDOW_SIZE)
 		elif (msg_type == config.MSG_TYPE_DATA): # this is the receiver
 			# print('Receiver - MSG_TYPE: ', msg_type)
